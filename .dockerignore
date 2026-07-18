@@ -1,0 +1,16 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+docs
+lancedb
+dist
+.output
+.tanstack
+.superpowers
+.lovable
+.vscode
+.idea
+*.log
+.DS_Store
