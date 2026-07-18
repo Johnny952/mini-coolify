@@ -61,7 +61,7 @@ export const listApplications = createServerFn({ method: "GET" }).handler(async 
 });
 
 export const getApplication = createServerFn({ method: "GET" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const app = (await coolifyFetch(`/api/v1/applications/${data.uuid}`)) as Record<string, unknown>;
     return {
@@ -76,7 +76,7 @@ export const getApplication = createServerFn({ method: "GET" })
   });
 
 export const deployApplication = createServerFn({ method: "POST" })
-  .inputValidator((d: { uuid: string; force?: boolean }) =>
+  .validator((d: { uuid: string; force?: boolean }) =>
     z.object({ uuid: z.string().min(1), force: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -85,19 +85,19 @@ export const deployApplication = createServerFn({ method: "POST" })
   });
 
 export const stopApplication = createServerFn({ method: "POST" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/stop`, { method: "GET" });
   });
 
 export const startApplication = createServerFn({ method: "POST" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/start`, { method: "GET" });
   });
 
 export const restartApplication = createServerFn({ method: "POST" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/restart`, { method: "GET" });
   });
@@ -113,7 +113,7 @@ export type Deployment = {
 };
 
 export const listDeployments = createServerFn({ method: "GET" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const res = (await coolifyFetch(
       `/api/v1/deployments/applications/${data.uuid}`,
@@ -134,7 +134,7 @@ export const listDeployments = createServerFn({ method: "GET" })
   });
 
 export const getDeployment = createServerFn({ method: "GET" })
-  .inputValidator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
+  .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const res = (await coolifyFetch(`/api/v1/deployments/${data.uuid}`)) as Record<
       string,
@@ -165,7 +165,7 @@ export const getDeployment = createServerFn({ method: "GET" })
   });
 
 export const getApplicationLogs = createServerFn({ method: "GET" })
-  .inputValidator((d: { uuid: string; lines?: number }) =>
+  .validator((d: { uuid: string; lines?: number }) =>
     z.object({ uuid: z.string().min(1), lines: z.number().int().positive().max(2000).optional() }).parse(d),
   )
   .handler(async ({ data }) => {
