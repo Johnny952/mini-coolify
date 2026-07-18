@@ -157,6 +157,8 @@ export const listDeployments = createServerFn({ method: "GET" })
     })) as Deployment[];
   });
 
+// No lleva assertUuidAllowed: recibe el uuid de un deployment, no de una
+// aplicación, y no está en COOLIFY_ALLOWED_UUIDS — no lo agregues aquí.
 export const getDeployment = createServerFn({ method: "GET" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
