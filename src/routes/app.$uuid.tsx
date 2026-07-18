@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw, Rocket, Square, Play, RotateCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { containerStatusTone } from "@/lib/utils";
 
 const appQO = (uuid: string) =>
   queryOptions({
@@ -44,7 +45,11 @@ export const Route = createFileRoute("/app/$uuid")({
   component: AppDetail,
 });
 
-function statusTone(status: string) {
+// Deployment status (queued/in_progress/finished/failed/cancelled) — plain
+// values, not the "state:health" compound format applications use, so a
+// simple substring match is safe here. For application/container status,
+// use containerStatusTone from @/lib/utils instead.
+function deploymentStatusTone(status: string) {
   const s = status.toLowerCase();
   if (s.includes("running") || s.includes("success") || s.includes("healthy")) return "bg-emerald-500";
   if (s.includes("queued") || s.includes("in_progress") || s.includes("starting") || s.includes("restarting")) return "bg-amber-500";
@@ -107,7 +112,7 @@ function AppDetail() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${statusTone(app.status)}`} />
+                <span className={`h-2.5 w-2.5 rounded-full ${containerStatusTone(app.status)}`} />
                 <h1 className="text-2xl font-semibold tracking-tight truncate">{app.name}</h1>
               </div>
               <div className="text-sm text-muted-foreground mt-1">
@@ -181,7 +186,7 @@ function AppDetail() {
                           className={`w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition ${active ? "bg-accent" : ""}`}
                         >
                           <div className="flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full ${statusTone(d.status)}`} />
+                            <span className={`h-2 w-2 rounded-full ${deploymentStatusTone(d.status)}`} />
                             <span className="font-medium capitalize">{d.status}</span>
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
@@ -203,7 +208,7 @@ function AppDetail() {
             <DeploymentLogs uuid={selectedDep} />
           </div>
         ) : (
-          <ContainerLogs uuid={uuid} />
+          <ContainerLogs uuid={uuid} isRunning={isRunning} />
         )}
       </main>
     </div>
@@ -246,13 +251,22 @@ function DeploymentLogs({ uuid }: { uuid: string | null }) {
   return <LogBox>{data?.logs?.trim() || "(sin logs)"}</LogBox>;
 }
 
-function ContainerLogs({ uuid }: { uuid: string }) {
+function ContainerLogs({ uuid, isRunning }: { uuid: string; isRunning: boolean }) {
   const getLogs = useServerFn(getApplicationLogs);
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["coolify", "container-logs", uuid],
     queryFn: () => getLogs({ data: { uuid, lines: 300 } }),
-    refetchInterval: 5_000,
+    enabled: isRunning,
+    refetchInterval: isRunning ? 5_000 : false,
   });
+
+  if (!isRunning) {
+    return (
+      <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+        El contenedor no está corriendo, no hay logs disponibles.
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Rocket, Square, Play, RotateCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { containerStatusTone } from "@/lib/utils";
 
 const appsQO = queryOptions({
   queryKey: ["coolify", "applications"],
@@ -30,15 +31,6 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(appsQO),
   component: Dashboard,
 });
-
-function statusTone(status: string) {
-  const s = status.toLowerCase();
-  if (s.includes("running") || s.includes("healthy")) return "bg-emerald-500";
-  if (s.includes("exited") || s.includes("stopped") || s.includes("dead")) return "bg-zinc-500";
-  if (s.includes("starting") || s.includes("restarting") || s.includes("degraded")) return "bg-amber-500";
-  if (s.includes("unhealthy") || s.includes("error") || s.includes("failed")) return "bg-red-500";
-  return "bg-zinc-400";
-}
 
 function Dashboard() {
   const { data: apps } = useSuspenseQuery(appsQO);
@@ -114,7 +106,7 @@ function AppRow({ app }: { app: Application }) {
   return (
     <div className="rounded-lg border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${statusTone(app.status)}`} aria-hidden />
+        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${containerStatusTone(app.status)}`} aria-hidden />
         <div className="min-w-0">
           <Link
             to="/app/$uuid"
