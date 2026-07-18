@@ -63,7 +63,8 @@ function Dashboard() {
       <main className="mx-auto max-w-6xl px-6 py-8">
         {apps.length === 0 ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-            No hay aplicaciones. Revisa que <code>COOLIFY_URL</code> y <code>COOLIFY_TOKEN</code> sean correctos.
+            No hay aplicaciones visibles. Revisa que <code>COOLIFY_URL</code>, <code>COOLIFY_TOKEN</code> y{" "}
+            <code>COOLIFY_ALLOWED_UUIDS</code> estén configurados correctamente.
           </div>
         ) : (
           <div className="grid gap-3">

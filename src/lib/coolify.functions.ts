@@ -36,6 +36,21 @@ function safeJson(text: string) {
   }
 }
 
+function getAllowedUuids(): Set<string> {
+  return new Set(
+    (process.env.COOLIFY_ALLOWED_UUIDS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function assertUuidAllowed(uuid: string) {
+  if (!getAllowedUuids().has(uuid)) {
+    throw new Error("Aplicación no encontrada");
+  }
+}
+
 export type Application = {
   uuid: string;
   name: string;
@@ -47,22 +62,26 @@ export type Application = {
 };
 
 export const listApplications = createServerFn({ method: "GET" }).handler(async () => {
+  const allowed = getAllowedUuids();
   const data = (await coolifyFetch("/api/v1/applications")) as unknown;
   const arr = Array.isArray(data) ? data : [];
-  return arr.map((a: Record<string, unknown>) => ({
-    uuid: String(a.uuid ?? ""),
-    name: String(a.name ?? a.uuid ?? "unnamed"),
-    status: String(a.status ?? "unknown"),
-    fqdn: (a.fqdn as string) ?? null,
-    git_repository: (a.git_repository as string) ?? null,
-    git_branch: (a.git_branch as string) ?? null,
-    description: (a.description as string) ?? null,
-  })) as Application[];
+  return arr
+    .map((a: Record<string, unknown>) => ({
+      uuid: String(a.uuid ?? ""),
+      name: String(a.name ?? a.uuid ?? "unnamed"),
+      status: String(a.status ?? "unknown"),
+      fqdn: (a.fqdn as string) ?? null,
+      git_repository: (a.git_repository as string) ?? null,
+      git_branch: (a.git_branch as string) ?? null,
+      description: (a.description as string) ?? null,
+    }))
+    .filter((a) => allowed.has(a.uuid)) as Application[];
 });
 
 export const getApplication = createServerFn({ method: "GET" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     const app = (await coolifyFetch(`/api/v1/applications/${data.uuid}`)) as Record<string, unknown>;
     return {
       uuid: String(app.uuid ?? data.uuid),
@@ -80,6 +99,7 @@ export const deployApplication = createServerFn({ method: "POST" })
     z.object({ uuid: z.string().min(1), force: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     const q = new URLSearchParams({ uuid: data.uuid, force: String(data.force ?? false) });
     return await coolifyFetch(`/api/v1/deploy?${q.toString()}`, { method: "GET" });
   });
@@ -87,18 +107,21 @@ export const deployApplication = createServerFn({ method: "POST" })
 export const stopApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/stop`, { method: "GET" });
   });
 
 export const startApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/start`, { method: "GET" });
   });
 
 export const restartApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     return await coolifyFetch(`/api/v1/applications/${data.uuid}/restart`, { method: "GET" });
   });
 
@@ -115,6 +138,7 @@ export type Deployment = {
 export const listDeployments = createServerFn({ method: "GET" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     const res = (await coolifyFetch(
       `/api/v1/deployments/applications/${data.uuid}`,
     )) as unknown;
@@ -169,6 +193,7 @@ export const getApplicationLogs = createServerFn({ method: "GET" })
     z.object({ uuid: z.string().min(1), lines: z.number().int().positive().max(2000).optional() }).parse(d),
   )
   .handler(async ({ data }) => {
+    assertUuidAllowed(data.uuid);
     const q = new URLSearchParams({ lines: String(data.lines ?? 200) });
     const res = (await coolifyFetch(
       `/api/v1/applications/${data.uuid}/logs?${q.toString()}`,
