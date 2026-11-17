@@ -101,28 +101,28 @@ export const deployApplication = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     assertUuidAllowed(data.uuid);
     const q = new URLSearchParams({ uuid: data.uuid, force: String(data.force ?? false) });
-    return await coolifyFetch(`/api/v1/deploy?${q.toString()}`, { method: "GET" });
+    return await coolifyFetch(`/api/v1/deploy?${q.toString()}`, { method: "POST" });
   });
 
 export const stopApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     assertUuidAllowed(data.uuid);
-    return await coolifyFetch(`/api/v1/applications/${data.uuid}/stop`, { method: "GET" });
+    return await coolifyFetch(`/api/v1/applications/${data.uuid}/stop`, { method: "POST" });
   });
 
 export const startApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     assertUuidAllowed(data.uuid);
-    return await coolifyFetch(`/api/v1/applications/${data.uuid}/start`, { method: "GET" });
+    return await coolifyFetch(`/api/v1/applications/${data.uuid}/start`, { method: "POST" });
   });
 
 export const restartApplication = createServerFn({ method: "POST" })
   .validator((d: { uuid: string }) => z.object({ uuid: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     assertUuidAllowed(data.uuid);
-    return await coolifyFetch(`/api/v1/applications/${data.uuid}/restart`, { method: "GET" });
+    return await coolifyFetch(`/api/v1/applications/${data.uuid}/restart`, { method: "POST" });
   });
 
 export type Deployment = {
@@ -167,11 +167,22 @@ export const getDeployment = createServerFn({ method: "GET" })
       unknown
     >;
     let logs: string | null = null;
-    const rawLogs = res.logs;
+    let rawLogs = res.logs;
+    // Coolify 4.7+ devuelve `logs` como un string que contiene un array JSON
+    // ('[{"output":...,"timestamp":...,"hidden":false},...]'); se decodifica
+    // antes de formatear. Si no es JSON, se muestra el texto tal cual.
+    if (typeof rawLogs === "string" && rawLogs.trimStart().startsWith("[")) {
+      try {
+        rawLogs = JSON.parse(rawLogs);
+      } catch {
+        // texto plano
+      }
+    }
     if (typeof rawLogs === "string") {
       logs = rawLogs;
     } else if (Array.isArray(rawLogs)) {
       logs = rawLogs
+        .filter((l: unknown) => !(l as { hidden?: boolean })?.hidden)
         .map((l: unknown) => {
           if (typeof l === "string") return l;
           const o = l as { output?: string; timestamp?: string };
